@@ -1,0 +1,8 @@
+# The predictions of nostradamus. This is a test dataset, I got it from project gutenburg because it was easy to get
+pg68907.txt
+prince.txt
+
+# Discord bot config
+config.json
+output.json
+db.json
