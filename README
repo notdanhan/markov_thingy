@@ -2,3 +2,5 @@
 Created by Daniel Hannon (danhan@live.ie)
 
 This is a simple Markov Chain Sentence generator written in go because I thought it might be fun to write
+
+If there's anything that you think is missing, please make a feature request or a PR. 
