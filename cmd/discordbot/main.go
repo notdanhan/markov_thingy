@@ -99,6 +99,11 @@ func main() {
 				outFile.Write(outp)
 				return
 			}
+			if m.Message.Content == "!save" {
+				// force save - this is for debugging
+				markov.SaveToFile(inputData)
+				return
+			}
 		} else {
 			if myAuth.Lock && m.ChannelID != myAuth.ChanId {
 				return

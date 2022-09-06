@@ -102,7 +102,7 @@ func (md *MarkovData) AddStringToData(input string) error {
 	exclaimFilter := regexp.MustCompile(`[\!]+`)
 	input = exclaimFilter.ReplaceAllString(input, ".")
 
-	generalPuncuationFilter := regexp.MustCompile(`[^a-zA-Z0-9\-.\:<>@']`)
+	generalPuncuationFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}\-.\:<>@_*?']`)
 	input = generalPuncuationFilter.ReplaceAllString(input, " ")
 
 	// split on whitespace
