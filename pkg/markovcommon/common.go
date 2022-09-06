@@ -36,6 +36,7 @@ func checkvalidpath(filename string) bool {
 
 // ReadinFile loads a previously saved database file, deserializes it, and returns a MarkovData struct and an error if one were to occur
 func ReadinFile(filepath string) (MarkovData, error) {
+	rand.Seed(time.Now().UnixNano())
 	if len(filepath) == 0 {
 		return MarkovData{}, errors.New("no filename passed, doing nothing")
 	}
@@ -111,7 +112,7 @@ func (md *MarkovData) AddStringToData(input string) error {
 	startOfSentence := true
 	var previousWord string
 	for _, word := range arr {
-		if word == "" {
+		if len(word) == 0 {
 			continue
 		}
 		if startOfSentence {
@@ -207,14 +208,14 @@ func (md *MarkovData) GenerateSentence(limit int) (string, error) {
 		return "", errors.New("no data to generate set is empty")
 	}
 	currWord := md.Startwords[rand.Intn(len(md.Startwords))]
-	output := currWord + " "
+	output := currWord
 	x := 0
 	for {
 		nextWord := weightedpick(md.Wordmaps[currWord])
 		if nextWord == "\\end" || x == limit {
 			break
 		}
-		output += nextWord + " "
+		output += " " + nextWord
 		currWord = nextWord
 		x++
 	}
