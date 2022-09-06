@@ -138,7 +138,9 @@ func (yt *YoutubeApiHandler) MakeQuery(query string) YoutubeApiResponse {
 	yt.Logger.Println("[Youtube API] Nothing found in cache, creating URL")
 	params := url.Values{}
 	params.Add("type", "video")
-	params.Add("maxResults", "10")
+	params.Add("maxResults", "30")
+	params.Add("safeSearch", "none")
+
 	params.Add("part", "snippet")
 	params.Add("q", url.QueryEscape(query))
 	yt.Logger.Println("[Youtube API] Query String Generated: https://www.googleapis.com/youtube/v3/search/?" + params.Encode())
@@ -173,6 +175,10 @@ func (yt *YoutubeApiHandler) GetRandomVid(query string) string {
 	if result.Items == nil {
 		yt.Logger.Println("[Youtube API] failed to get result, returning the funny.")
 		return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+	}
+	if len(result.Items) == 0 {
+		yt.Logger.Println("[Youtube API] No Results!")
+		return "No Results!"
 	}
 	myVid := result.Items[rand.Intn(len(result.Items))]
 	return "https://youtube.com/watch?v=" + myVid.Id.VideoId

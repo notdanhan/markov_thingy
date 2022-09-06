@@ -2,6 +2,9 @@
 pg68907.txt
 prince.txt
 
+# All log files
+markov_bot_*_log.txt
+
 # Discord bot config
 config.json
 output.json
