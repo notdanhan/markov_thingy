@@ -82,7 +82,7 @@ func main() {
 		defer file.Close()
 	}
 
-	var markov markovcommon.MarkovData
+	var markov markovcommon.MarkovChain
 	var err error
 	if progFlags.InputData != "" {
 		logger.Println("Loading in database:", progFlags.InputData)
@@ -93,7 +93,7 @@ func main() {
 		logger.Println("Done")
 	} else {
 		logger.Println("No database passed, creating empty database")
-		markov = markovcommon.MarkovData{}
+		markov = &markovcommon.MarkovData{}
 		progFlags.InputData = "db.json"
 	}
 

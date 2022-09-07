@@ -24,10 +24,10 @@ func main() {
 		return
 	}
 
-	var myMarkov markovcommon.MarkovData
+	var myMarkov markovcommon.MarkovChain
 	var err error
 	if database == "" {
-		myMarkov = markovcommon.MarkovData{}
+		myMarkov = &markovcommon.MarkovData{}
 	} else {
 		if myMarkov, err = markovcommon.ReadinFile(database); err != nil {
 			fmt.Println("Error Occurred", err.Error())

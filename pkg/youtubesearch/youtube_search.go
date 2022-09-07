@@ -90,7 +90,7 @@ func (yt *YoutubeApiHandler) initCache() {
 			yt.lock.Lock()
 			currT := time.Now()
 			for k, v := range yt.cache {
-				if v.Date.Sub(currT).Seconds() > yt.dataAge {
+				if (v.Date.Sub(currT).Seconds() * -1) > yt.dataAge {
 					yt.Logger.Println("[Youtube API] Expired cached item", v.Body.Etag, "Removed.")
 					delete(yt.cacheKeys, v.Query)
 					delete(yt.cache, k)
