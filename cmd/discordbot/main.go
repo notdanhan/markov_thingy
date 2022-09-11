@@ -36,11 +36,11 @@ type ProgramFlags struct {
 
 func (pf ProgramFlags) String() string {
 	var output string
-	output += "Program Flags\n"
-	output += "Save database:\t\t\t" + strconv.FormatBool(pf.Save) + "\n"
-	output += "Save Logs as file:\t\t\t" + strconv.FormatBool(pf.LogToFile) + "\n"
-	output += "Input Data File:\t\t\t" + pf.InputData + "\n"
-	output += "Response Frequency:\t\t\t" + strconv.FormatUint(uint64(pf.PostingOdds), 10) + "/100\n"
+	output += "\n____Program Flags____\n"
+	output += "Save database:\t\t" + strconv.FormatBool(pf.Save) + "\n"
+	output += "Save Logs as file:\t" + strconv.FormatBool(pf.LogToFile) + "\n"
+	output += "Input Data File:\t" + pf.InputData + "\n"
+	output += "Response Frequency:\t" + strconv.FormatUint(uint64(pf.PostingOdds), 10) + "/100\n"
 	output += "Save Messages Every " + strconv.FormatUint(uint64(pf.BackupFreq), 10) + " Messages\n"
 	return output
 }
@@ -72,9 +72,13 @@ func main() {
 			log.Fatalln("FATAL ERROR:", err.Error())
 		}
 		logger = log.New(file, "", log.LstdFlags|log.Lmicroseconds)
+		// Set general logs to output to file too (this is stuff related to third party libs)
+		log.SetOutput(file)
+		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 	} else {
 		logger = log.Default()
 	}
+	logger.SetPrefix("[Markov Discord Bot] ")
 
 	logger.Println(progFlags)
 

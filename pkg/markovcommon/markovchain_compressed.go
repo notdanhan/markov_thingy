@@ -64,14 +64,21 @@ func (md *MarkovDataAlt) AddStringToData(input string) error {
 	// Some Sanitization for reasons
 
 	// Filter out illegal characters
-	generalPuncuationFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}\-.\:\/\\!,.<>@_*?']`)
-	input = generalPuncuationFilter.ReplaceAllString(input, "")
+	generalPuncuationFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}\-.\:\/\\!,.<>@_*?=']`)
+	input = generalPuncuationFilter.ReplaceAllString(input, " ")
 
 	// Separate exclamations
 	exclaimFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}]+[!]+`)
 	input = exclaimFilter.ReplaceAllStringFunc(input, func(inp string) string {
 		exclaimFilter1 := regexp.MustCompile(`[!]+`)
 		return exclaimFilter1.ReplaceAllString(inp, " ! ")
+	})
+
+	// Question Marks
+	questionFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}]+[?]+`)
+	input = questionFilter.ReplaceAllStringFunc(input, func(inp string) string {
+		questionFilter1 := regexp.MustCompile(`[?]+`)
+		return questionFilter1.ReplaceAllString(inp, " ? ")
 	})
 
 	// Separate commas
@@ -102,7 +109,7 @@ func (md *MarkovDataAlt) AddStringToData(input string) error {
 			continue
 		}
 		if startOfSentence {
-			if strings.Contains(".,!", word) {
+			if strings.Contains(".,!?", word) {
 				continue
 			}
 
@@ -111,6 +118,8 @@ func (md *MarkovDataAlt) AddStringToData(input string) error {
 			if !slices.Contains(md.StartWords, val) {
 				md.StartWords = append(md.StartWords, val)
 			}
+			// "§" denotes Start words, currently getting rid of md.StartWords
+			md.WordGraph[md.getWordRef("§")][val]++
 			previousWord = val
 			continue
 		}
@@ -125,7 +134,7 @@ func (md *MarkovDataAlt) AddStringToData(input string) error {
 	}
 
 	// Don't add data to stop words, no point.
-	if previousWord == md.getWordRef(".") || previousWord == md.getWordRef("!") {
+	if previousWord == md.getWordRef(".") || previousWord == md.getWordRef("!") || previousWord == md.getWordRef("?") {
 		return nil
 	} else {
 		md.WordGraph[previousWord][md.getWordRef(".")]++
@@ -174,7 +183,7 @@ func (md *MarkovDataAlt) GenerateSentence(limit int) (string, error) {
 	x := 0
 	for x < limit {
 		nextWord := md.weightedPick(currWord)
-		if strings.Contains(".!", md.WordVals[currWord]) {
+		if strings.Contains(".!?", md.WordVals[currWord]) {
 			output += md.WordVals[nextWord]
 			break
 		}

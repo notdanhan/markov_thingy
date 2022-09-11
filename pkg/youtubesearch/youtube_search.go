@@ -76,7 +76,7 @@ type YoutubeApiHandler struct {
 }
 
 func (yt *YoutubeApiHandler) initCache() {
-	yt.Logger.Println("[Youtube API] Initalizing Cache for youtube API")
+	yt.Logger.Println("Initalizing Cache for youtube API")
 	yt.terminated = make(chan bool)
 	yt.listener = make(chan bool)
 	yt.cacheKeys = map[string]string{}
@@ -91,7 +91,7 @@ func (yt *YoutubeApiHandler) initCache() {
 			currT := time.Now()
 			for k, v := range yt.cache {
 				if (v.Date.Sub(currT).Seconds() * -1) > yt.dataAge {
-					yt.Logger.Println("[Youtube API] Expired cached item", v.Body.Etag, "Removed.")
+					yt.Logger.Println("Expired cached item", v.Body.Etag, "Removed.")
 					delete(yt.cacheKeys, v.Query)
 					delete(yt.cache, k)
 				}
@@ -102,10 +102,10 @@ func (yt *YoutubeApiHandler) initCache() {
 			for {
 				select {
 				case <-yt.listener:
-					yt.Logger.Println("[Youtube API] Cache loop terminated")
+					yt.Logger.Println("Cache loop terminated")
 					break main_loop
-				case <-time.After(5 * time.Minute):
-					yt.Logger.Println("[Youtube API] Checking Cache")
+				case <-time.After(30 * time.Minute):
+					yt.Logger.Println("Checking Cache")
 					break time_loop
 				}
 			}
@@ -116,26 +116,26 @@ func (yt *YoutubeApiHandler) initCache() {
 
 // Close terminates the YoutubeApiHandler
 func (yt *YoutubeApiHandler) Close() {
-	yt.Logger.Println("[Youtube API] Shutting down. Terminating Cache, Please allow some time.")
+	yt.Logger.Println("Shutting down. Terminating Cache, Please allow some time.")
 	defer close(yt.terminated)
 	yt.listener <- true
 	<-yt.terminated
-	yt.Logger.Println("[Youtube API] Shut down.")
+	yt.Logger.Println("Shut down.")
 }
 
 // MakeQuery searches to see for results, it also uses Local Caching to reduce bandwidth/api use :)
 func (yt *YoutubeApiHandler) MakeQuery(query string) YoutubeApiResponse {
-	yt.Logger.Println("[Youtube API] Searching Query \"", query, "\"")
+	yt.Logger.Println("Searching Query \"", query, "\"")
 	// need to lock for map accesses
 	yt.lock.Lock()
 	defer yt.lock.Unlock()
 	if v, ok := yt.cacheKeys[query]; ok {
 		if data, ok := yt.cache[v]; ok {
-			yt.Logger.Println("[Youtube API] Result Was Cached, returning.")
+			yt.Logger.Println("Result Was Cached, returning.")
 			return data.Body
 		}
 	}
-	yt.Logger.Println("[Youtube API] Nothing found in cache, creating URL")
+	yt.Logger.Println("Nothing found in cache, creating URL")
 	params := url.Values{}
 	params.Add("type", "video")
 	params.Add("maxResults", "30")
@@ -143,41 +143,42 @@ func (yt *YoutubeApiHandler) MakeQuery(query string) YoutubeApiResponse {
 
 	params.Add("part", "snippet")
 	params.Add("q", url.QueryEscape(query))
-	yt.Logger.Println("[Youtube API] Query String Generated: https://www.googleapis.com/youtube/v3/search/?" + params.Encode())
+	yt.Logger.Println("Query String Generated: https://www.googleapis.com/youtube/v3/search/?" + params.Encode())
 	params.Add("key", yt.ApiKey)
 	queryUrl := "https://www.googleapis.com/youtube/v3/search/?" + params.Encode()
 	resp, err := http.Get(queryUrl)
 	if err != nil {
-		yt.Logger.Println("[Youtube API] Non-Fatal Error, failed to make HTTP request Reason:", err.Error())
+		yt.Logger.Println("Non-Fatal Error, failed to make HTTP request Reason:", err.Error())
 		return YoutubeApiResponse{}
 	}
 	defer resp.Body.Close()
 	var ytResponse YoutubeApiResponse
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		yt.Logger.Println("[Youtube API] Error occurred while parsing response", err.Error())
+		yt.Logger.Println("Error occurred while parsing response", err.Error())
 		return YoutubeApiResponse{}
 	}
 	err = json.Unmarshal(data, &ytResponse)
 	if err != nil {
-		yt.Logger.Println("[Youtube API] Failed to parse JSON, reason", err.Error(), "\nResponse Data:", string(data))
+		yt.Logger.Println("Failed to parse JSON, reason", err.Error(), "\nResponse Data:", string(data))
 		return YoutubeApiResponse{}
 	}
-	yt.Logger.Println("[Youtube API] Response Successfully recieved and parsed, passing result to cache and returning")
+	yt.Logger.Println("Response Successfully recieved and parsed, passing result to cache and returning")
 	newCacheItem := YoutubeSearchCacheItem{time.Now(), query, ytResponse}
 	yt.cache[ytResponse.Etag] = newCacheItem
 	yt.cacheKeys[query] = ytResponse.Etag
 	return ytResponse
 }
 
+// GetRandomVid queries youtube and returns a random value from the results
 func (yt *YoutubeApiHandler) GetRandomVid(query string) string {
 	result := yt.MakeQuery(query)
 	if result.Items == nil {
-		yt.Logger.Println("[Youtube API] failed to get result, returning the funny.")
+		yt.Logger.Println("failed to get result, returning the funny.")
 		return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 	}
 	if len(result.Items) == 0 {
-		yt.Logger.Println("[Youtube API] No Results!")
+		yt.Logger.Println("No Results!")
 		return "No Results!"
 	}
 	myVid := result.Items[rand.Intn(len(result.Items))]
@@ -186,11 +187,14 @@ func (yt *YoutubeApiHandler) GetRandomVid(query string) string {
 
 // New creates a new YoutubeApiHandler and sets up the caching facilities
 func New(apiKey string, logger *log.Logger) *YoutubeApiHandler {
+	var intLogger *log.Logger = nil
 	if logger == nil {
-		logger = log.Default()
+		intLogger = log.New(log.Writer(), "[Youtube API] ", log.LstdFlags|log.Lmicroseconds)
+	} else {
+		intLogger = log.New(logger.Writer(), "[Youtube API] ", log.LstdFlags|log.Lmicroseconds)
 	}
-	logger.Println("[Youtube API] Created, initalizing")
-	myYtApiHandler := YoutubeApiHandler{ApiKey: apiKey, Logger: logger}
+	intLogger.Println("Created, initalizing")
+	myYtApiHandler := YoutubeApiHandler{ApiKey: apiKey, Logger: intLogger}
 	myYtApiHandler.initCache()
 	return &myYtApiHandler
 }
