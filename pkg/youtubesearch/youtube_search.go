@@ -189,9 +189,9 @@ func (yt *YoutubeApiHandler) GetRandomVid(query string) string {
 func New(apiKey string, logger *log.Logger) *YoutubeApiHandler {
 	var intLogger *log.Logger = nil
 	if logger == nil {
-		intLogger = log.New(log.Writer(), "[Youtube API] ", log.LstdFlags|log.Lmicroseconds)
+		intLogger = log.New(log.Writer(), "[Youtube API] ", log.LstdFlags|log.Lmicroseconds|log.Lmsgprefix|log.Lshortfile)
 	} else {
-		intLogger = log.New(logger.Writer(), "[Youtube API] ", log.LstdFlags|log.Lmicroseconds)
+		intLogger = log.New(logger.Writer(), "[Youtube API] ", log.LstdFlags|log.Lmicroseconds|log.Lmsgprefix|log.Lshortfile)
 	}
 	intLogger.Println("Created, initalizing")
 	myYtApiHandler := YoutubeApiHandler{ApiKey: apiKey, Logger: intLogger}

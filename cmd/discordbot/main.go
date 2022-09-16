@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -32,6 +33,11 @@ type ProgramFlags struct {
 	InputData   string // Preexisting dataset
 	PostingOdds uint   // Odds out of 100 that it will reply
 	BackupFreq  uint   // Save backup every n messages
+}
+
+type MarkovLock struct {
+	Markov markovcommon.MarkovChain
+	Mutex  sync.Mutex
 }
 
 func (pf ProgramFlags) String() string {
@@ -71,10 +77,10 @@ func main() {
 		if err != nil {
 			log.Fatalln("FATAL ERROR:", err.Error())
 		}
-		logger = log.New(file, "", log.LstdFlags|log.Lmicroseconds)
+		logger = log.New(file, "", log.LstdFlags|log.Lmicroseconds|log.Lmsgprefix|log.Lshortfile)
 		// Set general logs to output to file too (this is stuff related to third party libs)
 		log.SetOutput(file)
-		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+		log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lmsgprefix | log.Lshortfile)
 	} else {
 		logger = log.Default()
 	}
@@ -85,19 +91,20 @@ func main() {
 	if file != nil {
 		defer file.Close()
 	}
+	var markovStruct MarkovLock
+	markovStruct.Mutex = sync.Mutex{}
 
-	var markov markovcommon.MarkovChain
 	var err error
 	if progFlags.InputData != "" {
 		logger.Println("Loading in database:", progFlags.InputData)
-		markov, err = markovcommon.ReadinFile(progFlags.InputData)
+		markovStruct.Markov, err = markovcommon.ReadinFile(progFlags.InputData)
 		if err != nil {
 			logger.Fatalln("FATAL ERROR:", err.Error())
 		}
 		logger.Println("Done")
 	} else {
 		logger.Println("No database passed, creating empty database")
-		markov = &markovcommon.MarkovData{}
+		markovStruct.Markov = &markovcommon.MarkovData{}
 		progFlags.InputData = "db.json"
 	}
 
@@ -129,12 +136,14 @@ func main() {
 	defer ytListener.Close()
 	logger.Println("Connecting general operation loop")
 	discbot.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+		markovStruct.Mutex.Lock()
+		defer markovStruct.Mutex.Unlock()
 		if m.Author.ID == BotId {
 			return
 		}
 		if strings.HasPrefix(m.Content, myAuth.Prefix) {
 			if m.Message.Content == myAuth.Prefix+"bark" {
-				msg, err := markov.GenerateSentence(50)
+				msg, err := markovStruct.Markov.GenerateSentence(50)
 				if err != nil {
 					logger.Println("Non-Fatal Error:", err.Error())
 					return
@@ -160,7 +169,7 @@ func main() {
 			}
 			if m.Message.Content == myAuth.Prefix+"save" && progFlags.Save {
 				// force save - this is for debugging
-				if err := markov.SaveToFile(progFlags.InputData); err != nil {
+				if err := markovStruct.Markov.SaveToFile(progFlags.InputData); err != nil {
 					logger.Println("Non-Fatal Error:", err.Error())
 				} else {
 					logger.Println("Saving checkpoint.")
@@ -192,7 +201,7 @@ func main() {
 				progFlags.PostingOdds = uint(val)
 			}
 			if m.Message.Content == myAuth.Prefix+"ytrandom" && m.ChannelID == myAuth.ChanId {
-				mq, err := markov.GenerateSentence(20)
+				mq, err := markovStruct.Markov.GenerateSentence(20)
 				if err != nil {
 					logger.Println("Failed to generate Sentence, reason:", err.Error())
 				}
@@ -207,10 +216,10 @@ func main() {
 			if myAuth.Lock && m.ChannelID != myAuth.ChanId {
 				return
 			}
-			markov.AddStringToData(m.Content)
+			markovStruct.Markov.AddStringToData(m.Content)
 			// save in bursts of n messages
 			if progFlags.Save && count >= progFlags.BackupFreq {
-				if err := markov.SaveToFile(progFlags.InputData); err != nil {
+				if err := markovStruct.Markov.SaveToFile(progFlags.InputData); err != nil {
 					logger.Println("Non-Fatal Error", err.Error())
 				} else {
 					logger.Println("Saving checkpoint.")
@@ -221,7 +230,7 @@ func main() {
 			if len(m.Mentions) > 0 {
 				for _, ment := range m.Mentions {
 					if ment.ID == BotId {
-						msg, err := markov.GenerateSentence(50)
+						msg, err := markovStruct.Markov.GenerateSentence(50)
 						if err != nil {
 							logger.Println("Non-fatal ERROR:", err.Error())
 						}
@@ -229,7 +238,7 @@ func main() {
 					}
 				}
 			} else if rand.Intn(100) < int(progFlags.PostingOdds) {
-				msg, err := markov.GenerateSentence(50)
+				msg, err := markovStruct.Markov.GenerateSentence(50)
 				if err != nil {
 					logger.Println("Non-fatal ERROR:", err.Error())
 					return
@@ -260,6 +269,6 @@ func main() {
 	// Save whatever the hell it had at the time of shutdown
 	logger.Println("Shutting down.")
 	if progFlags.Save {
-		markov.SaveToFile(progFlags.InputData)
+		markovStruct.Markov.SaveToFile(progFlags.InputData)
 	}
 }
