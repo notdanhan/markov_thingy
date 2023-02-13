@@ -64,32 +64,32 @@ func (md *MarkovDataAlt) AddStringToData(input string) error {
 	// Some Sanitization for reasons
 
 	// Filter out illegal characters
-	generalPuncuationFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}\-.\:\/\\!,.<>@_*?=']`)
+	generalPuncuationFilter := regexp.MustCompile(`[^&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}\-.\:\/\\!,.<>@_*?=']`)
 	input = generalPuncuationFilter.ReplaceAllString(input, " ")
 
 	// Separate exclamations
-	exclaimFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}]+[!]+`)
+	exclaimFilter := regexp.MustCompile(`[^&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}]+[!]+`)
 	input = exclaimFilter.ReplaceAllStringFunc(input, func(inp string) string {
 		exclaimFilter1 := regexp.MustCompile(`[!]+`)
 		return exclaimFilter1.ReplaceAllString(inp, " ! ")
 	})
 
 	// Question Marks
-	questionFilter := regexp.MustCompile(`[^a-zA-Z0-9\p{Arabic}\p{Cyrillic}]+[?]+`)
+	questionFilter := regexp.MustCompile(`[^&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}]+[?]+`)
 	input = questionFilter.ReplaceAllStringFunc(input, func(inp string) string {
 		questionFilter1 := regexp.MustCompile(`[?]+`)
 		return questionFilter1.ReplaceAllString(inp, " ? ")
 	})
 
 	// Separate commas
-	commaFilter := regexp.MustCompile(`[a-zA-Z0-9\p{Arabic}\p{Cyrillic}]+,`)
+	commaFilter := regexp.MustCompile(`[&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}]+,`)
 	input = commaFilter.ReplaceAllStringFunc(input, func(inp string) string {
 		commaFilter1 := regexp.MustCompile(`[,]+`)
 		return commaFilter1.ReplaceAllString(inp, " , ")
 	})
 
 	// Separate Full Stops
-	fullStopFilter := regexp.MustCompile(`[a-zA-Z0-9\p{Arabic}\p{Cyrillic}]+\.\s`)
+	fullStopFilter := regexp.MustCompile(`[&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}]+\.\s`)
 	input = fullStopFilter.ReplaceAllStringFunc(input, func(inp string) string {
 		if checkhonorific(inp) {
 			return inp
