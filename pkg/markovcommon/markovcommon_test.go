@@ -19,7 +19,7 @@ func checkSubSlice[T comparable](s1 []T, s2 []T) bool {
 }
 
 func TestAddStringToData(t *testing.T) {
-	testMarkov := MarkovData{}
+	testMarkov := MarkovDataOld{}
 
 	// Check valid Data being added
 	testMarkov.AddStringToData("This is a test string. I am a test string. My Name is Dr. Rock. Dr. Rock is a professional doctor. Word. Scary stuff! Cool")

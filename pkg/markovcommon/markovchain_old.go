@@ -37,14 +37,14 @@ func weightedpick(inp map[string]int) string {
 	return ""
 }
 
-type MarkovData struct {
+type MarkovDataOld struct {
 	Startwords []string                  `json:"Startwords"`
 	Wordmaps   map[string]map[string]int `json:"Wordmaps"`
 }
 
 // SaveToFile exports the current MarkovData struct to a file of choice
 // Pass an empty string to save the data to a file called output.json in the current directory
-func (md *MarkovData) SaveToFile(filename string) error {
+func (md *MarkovDataOld) SaveToFile(filename string) error {
 	outpStr, err := json.MarshalIndent(md, "", "\t")
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (md *MarkovData) SaveToFile(filename string) error {
 }
 
 // AddStringToData parses a string and inserts it in the MarkovData struct as appropriate
-func (md *MarkovData) AddStringToData(input string) error {
+func (md *MarkovDataOld) AddStringToData(input string) error {
 	if md.Startwords == nil {
 		md.Startwords = []string{}
 	}
@@ -157,7 +157,7 @@ func (md *MarkovData) AddStringToData(input string) error {
 }
 
 // ReadInTextFile reads in an entire text file and adds to the Markov Chain database
-func (md *MarkovData) ReadInTextFile(filename string) error {
+func (md *MarkovDataOld) ReadInTextFile(filename string) error {
 	if !checkvalidpath(filename) {
 		return errors.New("path of text file is invalid")
 	}
@@ -171,7 +171,7 @@ func (md *MarkovData) ReadInTextFile(filename string) error {
 }
 
 // GenerateSentence creates a sentence using the input data
-func (md *MarkovData) GenerateSentence(limit int) (string, error) {
+func (md *MarkovDataOld) GenerateSentence(limit int) (string, error) {
 	if md.Startwords == nil || md.Wordmaps == nil {
 		return "", errors.New("no data to generate set is empty")
 	}
@@ -191,7 +191,7 @@ func (md *MarkovData) GenerateSentence(limit int) (string, error) {
 }
 
 // Seed seeds a random number for the RNG
-func (md *MarkovData) Seed() {
+func (md *MarkovDataOld) Seed() {
 	// Seed Random time
 	rand.Seed(time.Now().UnixNano())
 }

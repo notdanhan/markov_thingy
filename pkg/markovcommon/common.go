@@ -54,7 +54,7 @@ func ReadinFile(filepath string) (MarkovChain, error) {
 	if err1 == nil {
 		return &outp, nil
 	}
-	var outp1 MarkovDataAlt
+	var outp1 MarkovDataOld
 	err1 = json.Unmarshal(data, &outp1)
 	return &outp1, err1
 }

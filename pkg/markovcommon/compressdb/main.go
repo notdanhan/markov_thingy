@@ -27,9 +27,9 @@ func main() {
 		fmt.Println("Error occurred", err.Error())
 	}
 
-	var InputData markovcommon.MarkovData
+	var InputData markovcommon.MarkovDataOld
 	// Create Empty compressed version
-	OutputData := markovcommon.MarkovDataAlt{}
+	OutputData := markovcommon.MarkovData{}
 
 	if err := json.Unmarshal(content, &InputData); err != nil {
 		fmt.Println("Parsing error occurred", err.Error())

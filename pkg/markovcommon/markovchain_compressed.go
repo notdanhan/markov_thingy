@@ -18,7 +18,7 @@ import (
 // Version: 1
 // Brief: This is like MarkovData but it uses some compression shit innit
 
-type MarkovDataAlt struct {
+type MarkovData struct {
 	StartWords []uint          `json:"StartWords"` // Numeric references to each start word
 	WordCount  uint            `json:"WordCount"`  // Number of words available
 	WordRef    map[string]uint `json:"WordMap"`    // Word to number mappings
@@ -27,7 +27,7 @@ type MarkovDataAlt struct {
 }
 
 // getWordRef checks if a word exists and returns it's numeric equivalent, otherwise it makes one :)
-func (md *MarkovDataAlt) getWordRef(word string) uint {
+func (md *MarkovData) getWordRef(word string) uint {
 	if v, ok := md.WordRef[word]; ok {
 		return v
 	}
@@ -40,7 +40,7 @@ func (md *MarkovDataAlt) getWordRef(word string) uint {
 }
 
 // AddStringToData gets a string and parses it into a format that is interpretable by the MarkovData struct
-func (md *MarkovDataAlt) AddStringToData(input string) error {
+func (md *MarkovData) AddStringToData(input string) error {
 	if input == "" {
 		return errors.New("nothing passed, nothing to do")
 	}
@@ -142,7 +142,7 @@ func (md *MarkovDataAlt) AddStringToData(input string) error {
 	return nil
 }
 
-func (md *MarkovDataAlt) weightedPick(wordNo uint) uint {
+func (md *MarkovData) weightedPick(wordNo uint) uint {
 	tally := 0
 	for _, v := range md.WordGraph[wordNo] {
 		tally += int(v)
@@ -160,7 +160,7 @@ func (md *MarkovDataAlt) weightedPick(wordNo uint) uint {
 }
 
 // ReadInTextFile reads in an entire text file and adds to the Markov Chain database
-func (md *MarkovDataAlt) ReadInTextFile(filename string) error {
+func (md *MarkovData) ReadInTextFile(filename string) error {
 	if !checkvalidpath(filename) {
 		return errors.New("path of text file is invalid")
 	}
@@ -174,7 +174,7 @@ func (md *MarkovDataAlt) ReadInTextFile(filename string) error {
 }
 
 // GenerateSentence produces a sentence using the provided database
-func (md *MarkovDataAlt) GenerateSentence(limit int) (string, error) {
+func (md *MarkovData) GenerateSentence(limit int) (string, error) {
 	if md.WordCount == 0 {
 		return "", errors.New("no data in markov database")
 	}
@@ -195,7 +195,7 @@ func (md *MarkovDataAlt) GenerateSentence(limit int) (string, error) {
 }
 
 // SaveToFile outputs the data generated to a file, since it's not exactly human readable, it's just clumped together
-func (md *MarkovDataAlt) SaveToFile(filename string) error {
+func (md *MarkovData) SaveToFile(filename string) error {
 	outpStr, err := json.Marshal(md)
 	if err != nil {
 		return err
@@ -223,7 +223,7 @@ func (md *MarkovDataAlt) SaveToFile(filename string) error {
 }
 
 // Seed seeds the RNG for the markov num gen
-func (md *MarkovDataAlt) Seed() {
+func (md *MarkovData) Seed() {
 	//Seed random time
 	rand.Seed(time.Now().UnixNano())
 }
