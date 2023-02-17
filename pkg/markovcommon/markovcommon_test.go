@@ -47,6 +47,10 @@ func TestReadInFile(t *testing.T) {
 		if _, err := ReadinFile("C:\\"); err == nil {
 			t.Error("Expected error, got nothing.")
 		}
+	} else {
+		if _, err := ReadinFile(""); err == nil {
+			t.Error("Expected error, got nothing")
+		}
 	}
 
 	inp, err := ReadinFile(path.Join("testdata", "test.json"))
@@ -54,8 +58,14 @@ func TestReadInFile(t *testing.T) {
 		t.Error("Could not read valid file.")
 	}
 
-	if err := inp.SaveToFile("\n__COM"); err == nil {
-		t.Error("This should not have worked")
+	if runtime.GOOS == "windows" {
+		if err := inp.SaveToFile("\n__COM"); err == nil {
+			t.Error("This should not have worked")
+		}
+	} else {
+		if err := inp.SaveToFile("/"); err == nil {
+			t.Error("This should not have worked")
+		}
 	}
 
 	if err := inp.SaveToFile(""); err != nil {
@@ -71,8 +81,14 @@ func TestCheckValidPath(t *testing.T) {
 		t.Error("File exists but is not reported.")
 	}
 
-	if checkvalidpath("\n__COM") {
-		t.Error("Invalid path falsely reported as positive")
+	if runtime.GOOS == "windows" {
+		if checkvalidpath("\n__COM") {
+			t.Error("Invalid path falsely reported as positive")
+		}
+	} else {
+		if checkvalidpath("") {
+			t.Error("Invalid path falsely reported as positive")
+		}
 	}
 
 	if !checkvalidpath("foo.txt") {

@@ -39,7 +39,7 @@ func checkvalidpath(filename string) bool {
 // ReadinFile loads a previously saved database file, deserializes it, and returns a struct matching the MarkovChain interface
 func ReadinFile(filepath string) (MarkovChain, error) {
 	rand.Seed(time.Now().UnixNano())
-	if len(filepath) == 0 {
+	if len(filepath) == 0 || filepath == "" {
 		return &MarkovData{}, errors.New("no filename passed, doing nothing")
 	}
 	if _, err := os.Stat(filepath); err != nil {
