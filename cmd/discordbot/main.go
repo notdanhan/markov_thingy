@@ -65,12 +65,15 @@ func GetFlags() ProgramFlags {
 	return progFlags
 }
 
+var (
+	progFlags = GetFlags()
+	logger *log.Logger = nil
+	file *os.File = nil
+	markovStruct MarkovLock
+	BotId string
+)
+
 func main() {
-
-	var logger *log.Logger
-	var file *os.File = nil
-
-	progFlags := GetFlags()
 
 	if progFlags.LogToFile {
 		file, err := os.Create(("markov_bot_" + strings.ReplaceAll(time.Now().Local().Format(time.RFC3339), ":", "_") + "_log.txt"))
@@ -91,7 +94,6 @@ func main() {
 	if file != nil {
 		defer file.Close()
 	}
-	var markovStruct MarkovLock
 	markovStruct.Mutex = sync.Mutex{}
 
 	var err error
@@ -129,7 +131,7 @@ func main() {
 	if err != nil {
 		logger.Fatalln("FATAL ERROR", err.Error())
 	}
-	BotId := u.ID
+	BotId = u.ID
 	count := progFlags.BackupFreq
 	logger.Println("Setting up Youtube API stuff")
 	ytListener := youtubesearch.New(myAuth.YoutubeAPIKey, logger)
