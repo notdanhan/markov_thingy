@@ -10,7 +10,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
@@ -37,7 +36,6 @@ type ProgramFlags struct {
 
 type MarkovLock struct {
 	Markov markovcommon.MarkovChain
-	Mutex  sync.Mutex
 }
 
 func (pf ProgramFlags) String() string {
@@ -66,17 +64,18 @@ func GetFlags() ProgramFlags {
 }
 
 var (
-	progFlags = GetFlags()
-	logger *log.Logger = nil
-	file *os.File = nil
+	progFlags                = GetFlags()
+	logger       *log.Logger = nil
+	file         *os.File    = nil
 	markovStruct MarkovLock
-	BotId string
+	BotId        string
 )
 
 func main() {
-
 	if progFlags.LogToFile {
-		file, err := os.Create(("markov_bot_" + strings.ReplaceAll(time.Now().Local().Format(time.RFC3339), ":", "_") + "_log.txt"))
+		file, err := os.Create(
+			("markov_bot_" + strings.ReplaceAll(time.Now().Local().Format(time.RFC3339), ":", "_") + "_log.txt"),
+		)
 		if err != nil {
 			log.Fatalln("FATAL ERROR:", err.Error())
 		}
@@ -94,7 +93,6 @@ func main() {
 	if file != nil {
 		defer file.Close()
 	}
-	markovStruct.Mutex = sync.Mutex{}
 
 	var err error
 	if progFlags.InputData != "" {
@@ -138,8 +136,6 @@ func main() {
 	defer ytListener.Close()
 	logger.Println("Connecting general operation loop")
 	discbot.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		markovStruct.Mutex.Lock()
-		defer markovStruct.Mutex.Unlock()
 		if m.Author.ID == BotId {
 			return
 		}
@@ -211,7 +207,10 @@ func main() {
 				return
 			}
 			if m.Message.Content == myAuth.Prefix+"help" && m.ChannelID == myAuth.ChanId {
-				s.ChannelMessageSend(m.ChannelID, "```"+myAuth.Prefix+"help\t\t\tShows this\n"+myAuth.Prefix+"ytrandom\t\tRandom Youtube Video from search query generated from input data\n"+myAuth.Prefix+"bark\t\t\tSay Something\n"+myAuth.Prefix+"adjustrate <value 0-100>\t\tChances out of 100 that the bot will say something```")
+				s.ChannelMessageSend(
+					m.ChannelID,
+					"```"+myAuth.Prefix+"help\t\t\tShows this\n"+myAuth.Prefix+"ytrandom\t\tRandom Youtube Video from search query generated from input data\n"+myAuth.Prefix+"bark\t\t\tSay Something\n"+myAuth.Prefix+"adjustrate <value 0-100>\t\tChances out of 100 that the bot will say something```",
+				)
 				return
 			}
 		} else {
