@@ -21,7 +21,7 @@ func New(ChanId string) ServSync {
 	mUUID := uuid.New()
 	return ServSync{
 		ChanId,
-		mUUID.String(),
+		mUUID.String()+".json",
 		atomic.Int32{},
 		&markovcommon.MarkovData{
 			StartWords: []uint{},
