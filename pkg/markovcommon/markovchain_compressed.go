@@ -14,10 +14,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// MarkovDataAlt
+// MarkovData
 // Author: Daniel Hannon
 // Version: 1
-// Brief: This is like MarkovData but it uses some compression shit innit
+// Brief: This is like MarkovDataOld but it uses some compression shit innit
 
 type MarkovData struct {
 	StartWords []uint          `json:"StartWords"` // Numeric references to each start word
@@ -25,13 +25,11 @@ type MarkovData struct {
 	WordRef    map[string]uint `json:"WordMap"`    // Word to number mappings
 	WordVals   []string        `json:"WordVals"`   // Number to word mappings
 	WordGraph  []map[uint]uint `json:"WordGraph"`  // Mappings of word number -> word number with frequency of relationship
-	Mutex      sync.RWMutex    // Mutexes for locks and shit
+	mutex      sync.RWMutex    // Mutexes for locks and shit
 }
 
 // getWordRef checks if a word exists and returns it's numeric equivalent, otherwise it makes one :)
 func (md *MarkovData) getWordRef(word string) uint {
-	md.Mutex.Lock()
-	defer md.Mutex.Unlock()
 	if v, ok := md.WordRef[word]; ok {
 		return v
 	}
@@ -45,8 +43,8 @@ func (md *MarkovData) getWordRef(word string) uint {
 
 // AddStringToData gets a string and parses it into a format that is interpretable by the MarkovData struct
 func (md *MarkovData) AddStringToData(input string) error {
-	md.Mutex.Lock()
-	defer md.Mutex.Unlock()
+	md.mutex.Lock()
+	defer md.mutex.Unlock()
 	if input == "" {
 		return errors.New("nothing passed, nothing to do")
 	}
@@ -151,8 +149,6 @@ func (md *MarkovData) AddStringToData(input string) error {
 }
 
 func (md *MarkovData) weightedPick(wordNo uint) uint {
-	md.Mutex.RLock()
-	defer md.Mutex.RUnlock()
 	tally := 0
 	for _, v := range md.WordGraph[wordNo] {
 		tally += int(v)
@@ -171,8 +167,6 @@ func (md *MarkovData) weightedPick(wordNo uint) uint {
 
 // ReadInTextFile reads in an entire text file and adds to the Markov Chain database
 func (md *MarkovData) ReadInTextFile(filename string) error {
-	md.Mutex.Lock()
-	defer md.Mutex.Unlock()
 	if !checkvalidpath(filename) {
 		return errors.New("path of text file is invalid")
 	}
@@ -187,8 +181,8 @@ func (md *MarkovData) ReadInTextFile(filename string) error {
 
 // GenerateSentence produces a sentence using the provided database
 func (md *MarkovData) GenerateSentence(limit int) (string, error) {
-	md.Mutex.RLock()
-	defer md.Mutex.RUnlock()
+	md.mutex.RLock()
+	defer md.mutex.RUnlock()
 	if md.WordCount == 0 {
 		return "", errors.New("no data in markov database")
 	}
@@ -210,8 +204,8 @@ func (md *MarkovData) GenerateSentence(limit int) (string, error) {
 
 // SaveToFile outputs the data generated to a file, since it's not exactly human readable, it's just clumped together
 func (md *MarkovData) SaveToFile(filename string) error {
-	md.Mutex.RLock()
-	defer md.Mutex.RUnlock()
+	md.mutex.RLock()
+	defer md.mutex.RUnlock()
 	outpStr, err := json.Marshal(md)
 	if err != nil {
 		return err
