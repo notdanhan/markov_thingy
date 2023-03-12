@@ -199,11 +199,20 @@ func main() {
 				progFlags.PostingOdds = uint(val)
 			}
 			if m.Message.Content == myAuth.Prefix+"ytrandom" && m.ChannelID == myAuth.ChanId {
-				mq, err := markovStruct.Markov.GenerateSentence(20)
-				if err != nil {
-					logger.Println("Failed to generate Sentence, reason:", err.Error())
+				// Make sure that it always returns a video
+				for {
+					mq, err := markovStruct.Markov.GenerateSentence(20)
+					if err != nil {
+						logger.Println("Failed to generate Sentence, reason:", err.Error())
+						s.ChannelMessageSend(m.ChannelID, "An Error Occurred while generating a sentence!")
+						return
+					}
+					vid, err := ytListener.GetRandomVid(mq)
+					if err == nil {
+						s.ChannelMessageSend(m.ChannelID, "Video found with Query \""+mq+"\"\n"+vid)
+						break
+					}
 				}
-				s.ChannelMessageSend(m.ChannelID, "Video found with Query \""+mq+"\"\n"+ytListener.GetRandomVid(mq))
 				return
 			}
 			if m.Message.Content == myAuth.Prefix+"help" && m.ChannelID == myAuth.ChanId {
