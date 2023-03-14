@@ -17,11 +17,11 @@ type ServSync struct {
 	MarkovChain markovcommon.MarkovChain // markov chain stored/used
 }
 
-func New(ChanId string) ServSync {
+func New(ChanId string) *ServSync {
 	mUUID := uuid.New()
-	return ServSync{
+	return &ServSync{
 		ChanId,
-		mUUID.String()+".json",
+		mUUID.String() + ".json",
 		atomic.Int32{},
 		&markovcommon.MarkovData{
 			StartWords: []uint{},

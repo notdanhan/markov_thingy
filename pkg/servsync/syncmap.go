@@ -13,18 +13,18 @@ type SyncMap struct {
 }
 
 // Get value from map
-func (u *SyncMap) Get(key string) (val ServSync, ok bool) {
-	val = ServSync{}
+func (u *SyncMap) Get(key string) (val *ServSync, ok bool) {
+	val = nil
 	val1, ok := u.smap.Load(key)
 	if !ok {
 		return
 	}
-	val = val1.(ServSync)
+	val, ok = val1.(*ServSync)
 	return
 }
 
 // Set value in map
-func (u *SyncMap) Set(key string, val ServSync) {
+func (u *SyncMap) Set(key string, val *ServSync) {
 	u.smap.Store(key, val)
 }
 
@@ -42,9 +42,9 @@ func (u *SyncMap) MarshalJSON() ([]byte, error) {
 		}
 
 		mKey := key.(string)
-		mValue := value.(ServSync)
+		mValue := value.(*ServSync)
 
-		sMap[mKey] = mValue
+		sMap[mKey] = *mValue
 
 		return true
 	})
