@@ -2,6 +2,7 @@ package servsync
 
 import (
 	"encoding/json"
+	"errors"
 	"sync/atomic"
 
 	"github.com/danielh2942/markov_thingy/pkg/markovcommon"
@@ -13,8 +14,12 @@ import (
 type ServSync struct {
 	ChanId      string                   // Channel that messages are read from
 	FileName    string                   // name of file database is written to
-	MsgCount    atomic.Int32             // count of messages sent
+	MsgCount    atomic.Uint64            // count of messages sent
 	MarkovChain markovcommon.MarkovChain // markov chain stored/used
+}
+
+func (u *ServSync) Save() error {
+	return u.MarkovChain.SaveToFile(u.FileName)
 }
 
 func New(ChanId string) *ServSync {
@@ -22,7 +27,7 @@ func New(ChanId string) *ServSync {
 	return &ServSync{
 		ChanId,
 		mUUID.String() + ".json",
-		atomic.Int32{},
+		atomic.Uint64{},
 		&markovcommon.MarkovData{
 			StartWords: []uint{},
 			WordCount:  0,
@@ -34,6 +39,9 @@ func New(ChanId string) *ServSync {
 }
 
 func (u *ServSync) MarshalJSON() ([]byte, error) {
+	if err := u.Save(); err != nil {
+		return []byte{}, errors.New("Failed to save file.")
+	}
 	return json.Marshal(&struct {
 		ChanId   string `json:ChanId`
 		FileName string `json:FileName`
