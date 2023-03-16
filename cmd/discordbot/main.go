@@ -214,6 +214,9 @@ func main() {
 				return
 			}
 		} else {
+			if !exists {
+				return
+			}
 			if m.ChannelID != serv.ChanId {
 				return
 			}
