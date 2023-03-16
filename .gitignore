@@ -9,3 +9,4 @@ markov_bot_*_log.txt
 config.json
 output.json
 db.json
+*.json
