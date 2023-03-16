@@ -33,14 +33,10 @@ func (u *SyncMap) Delete(key string) {
 	u.smap.Delete(key)
 }
 
-func (u *SyncMap) MarshalJSON() ([]byte, error) {
-	var sMap map[string]ServSync
+func (u SyncMap) MarshalJSON() ([]byte, error) {
+	var sMap map[string]ServSync = map[string]ServSync{}
 
 	u.smap.Range(func(key, value any) bool {
-		if key == nil {
-			return false
-		}
-
 		mKey := key.(string)
 		mValue := value.(*ServSync)
 
@@ -61,8 +57,9 @@ func (u *SyncMap) UnmarshalJSON(data []byte) error {
 
 	u.smap = sync.Map{}
 
-	for key, value := range sMap {
-		u.smap.Store(key, value)
+	for key := range sMap {
+		val1 := sMap[key]
+		u.smap.Store(key, &val1)
 	}
 
 	return nil

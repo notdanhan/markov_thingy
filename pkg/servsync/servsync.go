@@ -38,7 +38,7 @@ func New(ChanId string) *ServSync {
 	}
 }
 
-func (u *ServSync) MarshalJSON() ([]byte, error) {
+func (u ServSync) MarshalJSON() ([]byte, error) {
 	if err := u.Save(); err != nil {
 		return []byte{}, errors.New("Failed to save file.")
 	}
@@ -61,6 +61,7 @@ func (u *ServSync) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	u.ChanId = aux.ChanId
 	u.FileName = aux.FileName
 	u.MsgCount.Store(0)
 	if tmp, err := markovcommon.ReadinFile(u.FileName); err != nil {
