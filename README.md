@@ -12,7 +12,7 @@ It was written for fun and is probably going to be maintained on a very ad-hoc b
 
 ## Tech
 
-Dillinger uses a number of open source projects to work properly:
+markov_thingy uses a number of open source projects to work properly:
 
 - [Go](https://go.dev) - The Go programming language
 - [DiscordGo](https://github.com/bwmarrin/discordgo) - A discord library for the go programming language
@@ -48,11 +48,14 @@ Want to contribute? Great!
 Please submit patches to the dev branch with anything that you think would contribute nicely to the bot :)
 
 Please attach the pre-commit hook in .githooks before you add anything to the repo!
+
 (It uses gofmt so install that too.)
 
 ## Contact
 If you need to get in touch with me contact me on discord or by email
+
 Discord: notdanhan#3199
+
 Email: [danhan@live.ie](mailto:danhan@live.ie)
 
 Thanks and have fun!
