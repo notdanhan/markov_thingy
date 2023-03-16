@@ -8,15 +8,16 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/exp/slices"
 )
 
-// MarkovDataAlt
+// MarkovData
 // Author: Daniel Hannon
 // Version: 1
-// Brief: This is like MarkovData but it uses some compression shit innit
+// Brief: This is like MarkovDataOld but it uses some compression shit innit
 
 type MarkovData struct {
 	StartWords []uint          `json:"StartWords"` // Numeric references to each start word
@@ -24,6 +25,7 @@ type MarkovData struct {
 	WordRef    map[string]uint `json:"WordMap"`    // Word to number mappings
 	WordVals   []string        `json:"WordVals"`   // Number to word mappings
 	WordGraph  []map[uint]uint `json:"WordGraph"`  // Mappings of word number -> word number with frequency of relationship
+	mutex      sync.RWMutex    // Mutexes for locks and shit
 }
 
 // getWordRef checks if a word exists and returns it's numeric equivalent, otherwise it makes one :)
@@ -41,6 +43,8 @@ func (md *MarkovData) getWordRef(word string) uint {
 
 // AddStringToData gets a string and parses it into a format that is interpretable by the MarkovData struct
 func (md *MarkovData) AddStringToData(input string) error {
+	md.mutex.Lock()
+	defer md.mutex.Unlock()
 	if input == "" {
 		return errors.New("nothing passed, nothing to do")
 	}
@@ -64,7 +68,9 @@ func (md *MarkovData) AddStringToData(input string) error {
 	// Some Sanitization for reasons
 
 	// Filter out illegal characters
-	generalPuncuationFilter := regexp.MustCompile(`[^&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}\-.\:\/\\!,.<>@_*?=']`)
+	generalPuncuationFilter := regexp.MustCompile(
+		`[^&#a-zA-Z0-9\p{Arabic}\p{Cyrillic}\x{1F000}-\x{1FFFF}\x{2600}-\x{26FF}\-.\:\/\\!,.<>@_*?=']`,
+	)
 	input = generalPuncuationFilter.ReplaceAllString(input, " ")
 
 	// Separate exclamations
@@ -175,6 +181,8 @@ func (md *MarkovData) ReadInTextFile(filename string) error {
 
 // GenerateSentence produces a sentence using the provided database
 func (md *MarkovData) GenerateSentence(limit int) (string, error) {
+	md.mutex.RLock()
+	defer md.mutex.RUnlock()
 	if md.WordCount == 0 {
 		return "", errors.New("no data in markov database")
 	}
@@ -196,6 +204,8 @@ func (md *MarkovData) GenerateSentence(limit int) (string, error) {
 
 // SaveToFile outputs the data generated to a file, since it's not exactly human readable, it's just clumped together
 func (md *MarkovData) SaveToFile(filename string) error {
+	md.mutex.RLock()
+	defer md.mutex.RUnlock()
 	outpStr, err := json.Marshal(md)
 	if err != nil {
 		return err
@@ -224,6 +234,6 @@ func (md *MarkovData) SaveToFile(filename string) error {
 
 // Seed seeds the RNG for the markov num gen
 func (md *MarkovData) Seed() {
-	//Seed random time
+	// Seed random time
 	rand.Seed(time.Now().UnixNano())
 }

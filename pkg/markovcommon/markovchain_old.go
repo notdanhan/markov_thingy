@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"sync"
 
 	"golang.org/x/exp/slices"
 )
@@ -40,11 +41,14 @@ func weightedpick(inp map[string]int) string {
 type MarkovDataOld struct {
 	Startwords []string                  `json:"Startwords"`
 	Wordmaps   map[string]map[string]int `json:"Wordmaps"`
+	mutex      sync.RWMutex
 }
 
 // SaveToFile exports the current MarkovData struct to a file of choice
 // Pass an empty string to save the data to a file called output.json in the current directory
 func (md *MarkovDataOld) SaveToFile(filename string) error {
+	md.mutex.RLock()
+	defer md.mutex.RUnlock()
 	outpStr, err := json.MarshalIndent(md, "", "\t")
 	if err != nil {
 		return err
@@ -73,6 +77,8 @@ func (md *MarkovDataOld) SaveToFile(filename string) error {
 
 // AddStringToData parses a string and inserts it in the MarkovData struct as appropriate
 func (md *MarkovDataOld) AddStringToData(input string) error {
+	md.mutex.Lock()
+	defer md.mutex.Unlock()
 	if md.Startwords == nil {
 		md.Startwords = []string{}
 	}
@@ -172,6 +178,8 @@ func (md *MarkovDataOld) ReadInTextFile(filename string) error {
 
 // GenerateSentence creates a sentence using the input data
 func (md *MarkovDataOld) GenerateSentence(limit int) (string, error) {
+	md.mutex.RLock()
+	defer md.mutex.RUnlock()
 	if md.Startwords == nil || md.Wordmaps == nil {
 		return "", errors.New("no data to generate set is empty")
 	}

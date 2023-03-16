@@ -1,6 +1,7 @@
 package youtubesearch
 
 import (
+	"errors"
 	"encoding/json"
 	"io"
 	"log"
@@ -171,18 +172,14 @@ func (yt *YoutubeApiHandler) MakeQuery(query string) YoutubeApiResponse {
 }
 
 // GetRandomVid queries youtube and returns a random value from the results
-func (yt *YoutubeApiHandler) GetRandomVid(query string) string {
+func (yt *YoutubeApiHandler) GetRandomVid(query string) (string, error) {
 	result := yt.MakeQuery(query)
-	if result.Items == nil {
-		yt.Logger.Println("failed to get result, returning the funny.")
-		return "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-	}
-	if len(result.Items) == 0 {
+	if result.Items == nil || len(result.Items) == 0 {
 		yt.Logger.Println("No Results!")
-		return "No Results!"
+		return "No Results!", errors.New("No Results")
 	}
 	myVid := result.Items[rand.Intn(len(result.Items))]
-	return "https://youtube.com/watch?v=" + myVid.Id.VideoId
+	return "https://youtube.com/watch?v=" + myVid.Id.VideoId, nil
 }
 
 // New creates a new YoutubeApiHandler and sets up the caching facilities

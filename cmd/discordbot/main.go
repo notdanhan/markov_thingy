@@ -10,34 +10,26 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/danielh2942/markov_thingy/pkg/markovcommon"
+	"github.com/danielh2942/markov_thingy/pkg/servsync"
 	"github.com/danielh2942/markov_thingy/pkg/youtubesearch"
 )
 
 type AuthStruct struct {
-	Token         string `json:"Token"`         // Discord Auth Token
-	YoutubeAPIKey string `json:"YoutubeAPIKey"` // Youtube Data Api Key token
-	Prefix        string `json:"Prefix"`        // Command Prefix (TODO: Remove in favor of slash commands)
-	Lock          bool   `json:"ChanLock"`      // Locked to channel
-	ChanId        string `json:"ChanId"`        // Channel locked to
+	Token         string           `json:"Token"`         // Discord Auth Token
+	YoutubeAPIKey string           `json:"YoutubeAPIKey"` // Youtube Data Api Key token
+	Prefix        string           `json:"Prefix"`        // Command Prefix (TODO: Remove in favor of slash commands)
+	Servers       servsync.SyncMap `json:"Servers"`       // The servers that the program has access to
 }
 
 type ProgramFlags struct {
 	Save        bool   // Save database incrementally
 	LogToFile   bool   // Write logs to a file (enforced form markov_bot_[date]_log.txt)
-	InputData   string // Preexisting dataset
 	PostingOdds uint   // Odds out of 100 that it will reply
-	BackupFreq  uint   // Save backup every n messages
-}
-
-type MarkovLock struct {
-	Markov markovcommon.MarkovChain
-	Mutex  sync.Mutex
+	BackupFreq  uint64 // Save backup every n messages
 }
 
 func (pf ProgramFlags) String() string {
@@ -45,7 +37,6 @@ func (pf ProgramFlags) String() string {
 	output += "\n____Program Flags____\n"
 	output += "Save database:\t\t" + strconv.FormatBool(pf.Save) + "\n"
 	output += "Save Logs as file:\t" + strconv.FormatBool(pf.LogToFile) + "\n"
-	output += "Input Data File:\t" + pf.InputData + "\n"
 	output += "Response Frequency:\t" + strconv.FormatUint(uint64(pf.PostingOdds), 10) + "/100\n"
 	output += "Save Messages Every " + strconv.FormatUint(uint64(pf.BackupFreq), 10) + " Messages\n"
 	return output
@@ -54,11 +45,10 @@ func (pf ProgramFlags) String() string {
 func GetFlags() ProgramFlags {
 	progFlags := ProgramFlags{}
 
-	flag.BoolVar(&progFlags.Save, "save", false, "Save the data provided")
-	flag.StringVar(&progFlags.InputData, "inp", "", "The database to work off")
+	flag.BoolVar(&progFlags.Save, "nosave", true, "Don't save the data provided")
 	flag.UintVar(&progFlags.PostingOdds, "odds", 20, "Likelihood out of 100")
 	flag.BoolVar(&progFlags.LogToFile, "savelogs", false, "Log to a file")
-	flag.UintVar(&progFlags.BackupFreq, "backup", 100, "How many messages before a backup")
+	flag.Uint64Var(&progFlags.BackupFreq, "backup", 100, "How many messages before a backup")
 
 	flag.Parse()
 
@@ -66,17 +56,17 @@ func GetFlags() ProgramFlags {
 }
 
 var (
-	progFlags = GetFlags()
-	logger *log.Logger = nil
-	file *os.File = nil
-	markovStruct MarkovLock
-	BotId string
+	progFlags             = GetFlags()
+	logger    *log.Logger = nil
+	file      *os.File    = nil
+	BotId     string
 )
 
 func main() {
-
 	if progFlags.LogToFile {
-		file, err := os.Create(("markov_bot_" + strings.ReplaceAll(time.Now().Local().Format(time.RFC3339), ":", "_") + "_log.txt"))
+		file, err := os.Create(
+			("markov_bot_" + strings.ReplaceAll(time.Now().Local().Format(time.RFC3339), ":", "_") + "_log.txt"),
+		)
 		if err != nil {
 			log.Fatalln("FATAL ERROR:", err.Error())
 		}
@@ -94,22 +84,8 @@ func main() {
 	if file != nil {
 		defer file.Close()
 	}
-	markovStruct.Mutex = sync.Mutex{}
 
 	var err error
-	if progFlags.InputData != "" {
-		logger.Println("Loading in database:", progFlags.InputData)
-		markovStruct.Markov, err = markovcommon.ReadinFile(progFlags.InputData)
-		if err != nil {
-			logger.Fatalln("FATAL ERROR:", err.Error())
-		}
-		logger.Println("Done")
-	} else {
-		logger.Println("No database passed, creating empty database")
-		markovStruct.Markov = &markovcommon.MarkovData{}
-		progFlags.InputData = "db.json"
-	}
-
 	logger.Println("Reading in config file")
 	inpFile, err := os.ReadFile("config.json")
 	if err != nil {
@@ -132,30 +108,35 @@ func main() {
 		logger.Fatalln("FATAL ERROR", err.Error())
 	}
 	BotId = u.ID
-	count := progFlags.BackupFreq
 	logger.Println("Setting up Youtube API stuff")
 	ytListener := youtubesearch.New(myAuth.YoutubeAPIKey, logger)
 	defer ytListener.Close()
 	logger.Println("Connecting general operation loop")
 	discbot.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-		markovStruct.Mutex.Lock()
-		defer markovStruct.Mutex.Unlock()
+		serv, exists := myAuth.Servers.Get(m.GuildID)
 		if m.Author.ID == BotId {
 			return
 		}
 		if strings.HasPrefix(m.Content, myAuth.Prefix) {
 			if m.Message.Content == myAuth.Prefix+"bark" {
-				msg, err := markovStruct.Markov.GenerateSentence(50)
-				if err != nil {
-					logger.Println("Non-Fatal Error:", err.Error())
+				if serv == nil {
 					return
 				}
-				s.ChannelMessageSend(m.ChannelID, msg)
+				msg, err := serv.MarkovChain.GenerateSentence(50)
+				if err != nil {
+					logger.Println("Non-fatal Error:", err.Error())
+					return
+				}
+				s.ChannelMessageSend(serv.ChanId, msg)
 			}
 			if m.Message.Content == myAuth.Prefix+"lock" {
 				// limit to one channel
-				myAuth.Lock = true
-				myAuth.ChanId = m.ChannelID
+				if !exists {
+					mc := servsync.New(m.ChannelID)
+					myAuth.Servers.Set(m.GuildID, mc)
+				} else {
+					serv.ChanId = m.ChannelID
+				}
 				outp, err := json.MarshalIndent(myAuth, "", "\t")
 				if err != nil {
 					return
@@ -164,14 +145,17 @@ func main() {
 				if err != nil {
 					return
 				}
-				defer outFile.Close()
 				outFile.Write(outp)
-				logger.Println("Messages are now only read from channel with ID", m.ChannelID)
+				outFile.Close()
+				logger.Println("Messages from guild", m.GuildID, "are now only read from channel with ID", m.ChannelID)
 				return
 			}
 			if m.Message.Content == myAuth.Prefix+"save" && progFlags.Save {
 				// force save - this is for debugging
-				if err := markovStruct.Markov.SaveToFile(progFlags.InputData); err != nil {
+				if !exists {
+					return
+				}
+				if err := serv.Save(); err != nil {
 					logger.Println("Non-Fatal Error:", err.Error())
 				} else {
 					logger.Println("Saving checkpoint.")
@@ -185,7 +169,7 @@ func main() {
 					logger.Println("Non-Fatal error:", err.Error())
 					return
 				}
-				progFlags.BackupFreq = uint(val)
+				progFlags.BackupFreq = uint64(val)
 				logger.Println("Backup frequency changed to every ", val, "Messages!")
 				return
 			}
@@ -202,37 +186,52 @@ func main() {
 				}
 				progFlags.PostingOdds = uint(val)
 			}
-			if m.Message.Content == myAuth.Prefix+"ytrandom" && m.ChannelID == myAuth.ChanId {
-				mq, err := markovStruct.Markov.GenerateSentence(20)
-				if err != nil {
-					logger.Println("Failed to generate Sentence, reason:", err.Error())
-				}
-				s.ChannelMessageSend(m.ChannelID, "Video found with Query \""+mq+"\"\n"+ytListener.GetRandomVid(mq))
+			if !exists {
 				return
 			}
-			if m.Message.Content == myAuth.Prefix+"help" && m.ChannelID == myAuth.ChanId {
-				s.ChannelMessageSend(m.ChannelID, "```"+myAuth.Prefix+"help\t\t\tShows this\n"+myAuth.Prefix+"ytrandom\t\tRandom Youtube Video from search query generated from input data\n"+myAuth.Prefix+"bark\t\t\tSay Something\n"+myAuth.Prefix+"adjustrate <value 0-100>\t\tChances out of 100 that the bot will say something```")
+			if m.Message.Content == myAuth.Prefix+"ytrandom" && m.ChannelID == serv.ChanId {
+				// Make sure that it always returns a video
+				for {
+					mq, err := serv.MarkovChain.GenerateSentence(20)
+					if err != nil {
+						logger.Println("Failed to generate Sentence, reason:", err.Error())
+						s.ChannelMessageSend(m.ChannelID, "An Error Occurred while generating a sentence!")
+						return
+					}
+					vid, err := ytListener.GetRandomVid(mq)
+					if err == nil {
+						s.ChannelMessageSend(m.ChannelID, "Video found with Query \""+mq+"\"\n"+vid)
+						break
+					}
+				}
+				return
+			}
+			if m.Message.Content == myAuth.Prefix+"help" && m.ChannelID == serv.ChanId {
+				s.ChannelMessageSend(
+					m.ChannelID,
+					"```"+myAuth.Prefix+"help\t\t\tShows this\n"+myAuth.Prefix+"ytrandom\t\tRandom Youtube Video from search query generated from input data\n"+myAuth.Prefix+"bark\t\t\tSay Something\n"+myAuth.Prefix+"adjustrate <value 0-100>\t\tChances out of 100 that the bot will say something```",
+				)
 				return
 			}
 		} else {
-			if myAuth.Lock && m.ChannelID != myAuth.ChanId {
+			if m.ChannelID != serv.ChanId {
 				return
 			}
-			markovStruct.Markov.AddStringToData(m.Content)
+			serv.MarkovChain.AddStringToData(m.Content)
 			// save in bursts of n messages
-			if progFlags.Save && count >= progFlags.BackupFreq {
-				if err := markovStruct.Markov.SaveToFile(progFlags.InputData); err != nil {
+			if progFlags.Save && serv.MsgCount.Load() >= progFlags.BackupFreq {
+				if err := serv.Save(); err != nil {
 					logger.Println("Non-Fatal Error", err.Error())
 				} else {
 					logger.Println("Saving checkpoint.")
 				}
-				count = 0
+				serv.MsgCount.Store(0)
 			}
 			// Reply when mentioned
 			if len(m.Mentions) > 0 {
 				for _, ment := range m.Mentions {
 					if ment.ID == BotId {
-						msg, err := markovStruct.Markov.GenerateSentence(50)
+						msg, err := serv.MarkovChain.GenerateSentence(50)
 						if err != nil {
 							logger.Println("Non-fatal ERROR:", err.Error())
 						}
@@ -240,14 +239,14 @@ func main() {
 					}
 				}
 			} else if rand.Intn(100) < int(progFlags.PostingOdds) {
-				msg, err := markovStruct.Markov.GenerateSentence(50)
+				msg, err := serv.MarkovChain.GenerateSentence(50)
 				if err != nil {
 					logger.Println("Non-fatal ERROR:", err.Error())
 					return
 				}
 				s.ChannelMessageSend(m.ChannelID, msg)
 			}
-			count++
+			serv.MsgCount.Add(1)
 		}
 	})
 
@@ -271,6 +270,15 @@ func main() {
 	// Save whatever the hell it had at the time of shutdown
 	logger.Println("Shutting down.")
 	if progFlags.Save {
-		markovStruct.Markov.SaveToFile(progFlags.InputData)
+		outp, err := json.MarshalIndent(myAuth, "", "\t")
+		if err != nil {
+			return
+		}
+		outFile, err := os.Create("config.json")
+		if err != nil {
+			return
+		}
+		outFile.Write(outp)
+		outFile.Close()
 	}
 }
