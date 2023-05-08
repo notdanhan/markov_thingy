@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/google/uuid v1.3.0
-	golang.org/x/exp v0.0.0-20230314191032-db074128a8ec
+	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 )
 
 require (
