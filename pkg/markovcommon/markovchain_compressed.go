@@ -115,7 +115,7 @@ func (md *MarkovData) AddStringToData(input string) error {
 			continue
 		}
 		if startOfSentence {
-			if strings.Contains(".,!?", word) {
+			if strings.ContainsAny(word,",.!?") {
 				continue
 			}
 
