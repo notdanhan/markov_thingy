@@ -4,12 +4,12 @@ go 1.19
 
 require (
 	github.com/bwmarrin/discordgo v0.27.1
-	github.com/google/uuid v1.3.0
-	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
+	github.com/google/uuid v1.3.1
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 )
 
 require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
 )
