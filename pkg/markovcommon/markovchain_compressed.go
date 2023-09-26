@@ -8,10 +8,8 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"slices"
 	"sync"
-	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 // MarkovData
@@ -232,8 +230,3 @@ func (md *MarkovData) SaveToFile(filename string) error {
 	return nil
 }
 
-// Seed seeds the RNG for the markov num gen
-func (md *MarkovData) Seed() {
-	// Seed random time
-	rand.Seed(time.Now().UnixNano())
-}

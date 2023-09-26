@@ -7,11 +7,9 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
-	"time"
 	"sync"
-
-	"golang.org/x/exp/slices"
 )
 
 // markovchain_old.go
@@ -198,8 +196,3 @@ func (md *MarkovDataOld) GenerateSentence(limit int) (string, error) {
 	return output, nil
 }
 
-// Seed seeds a random number for the RNG
-func (md *MarkovDataOld) Seed() {
-	// Seed Random time
-	rand.Seed(time.Now().UnixNano())
-}

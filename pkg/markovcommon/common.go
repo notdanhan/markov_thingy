@@ -3,11 +3,8 @@ package markovcommon
 import (
 	"encoding/json"
 	"errors"
-	"math/rand"
 	"os"
-	"time"
-
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // MarkovCommon
@@ -19,7 +16,6 @@ type MarkovChain interface {
 	ReadInTextFile(string) error
 	GenerateSentence(int) (string, error)
 	SaveToFile(string) error
-	Seed()
 }
 
 // Helper functions
@@ -38,7 +34,6 @@ func checkvalidpath(filename string) bool {
 
 // ReadinFile loads a previously saved database file, deserializes it, and returns a struct matching the MarkovChain interface
 func ReadinFile(filepath string) (MarkovChain, error) {
-	rand.Seed(time.Now().UnixNano())
 	if len(filepath) == 0 || filepath == "" {
 		return &MarkovData{}, errors.New("no filename passed, doing nothing")
 	}
