@@ -10,3 +10,6 @@ config.json
 output.json
 db.json
 *.json
+
+# Unit Test related files
+cover.cov

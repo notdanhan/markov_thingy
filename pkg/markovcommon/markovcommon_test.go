@@ -4,9 +4,8 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"testing"
-
-	"golang.org/x/exp/slices"
 )
 
 func checkSubSlice[T comparable](s1 []T, s2 []T) bool {
@@ -22,7 +21,9 @@ func TestAddStringToData(t *testing.T) {
 	testMarkov := MarkovDataOld{}
 
 	// Check valid Data being added
-	testMarkov.AddStringToData("This is a test string. I am a test string. My Name is Dr. Rock. Dr. Rock is a professional doctor. Word. Scary stuff! Cool")
+	testMarkov.AddStringToData(
+		"This is a test string. I am a test string. My Name is Dr. Rock. Dr. Rock is a professional doctor. Word. Scary stuff! Cool",
+	)
 	if !checkSubSlice([]string{"This", "I", "My", "Dr.", "Word", "Scary", "Cool"}, testMarkov.Startwords) {
 		t.Error("Expected Start words \"This\" and \"I\", got", testMarkov.Startwords, ".")
 	}
@@ -73,7 +74,6 @@ func TestReadInFile(t *testing.T) {
 	}
 
 	os.Remove("output.json")
-
 }
 
 func TestCheckValidPath(t *testing.T) {

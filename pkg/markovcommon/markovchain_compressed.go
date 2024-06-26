@@ -3,15 +3,13 @@ package markovcommon
 import (
 	"encoding/json"
 	"errors"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"path"
 	"regexp"
 	"strings"
+	"slices"
 	"sync"
-	"time"
-
-	"golang.org/x/exp/slices"
 )
 
 // MarkovData
@@ -115,7 +113,7 @@ func (md *MarkovData) AddStringToData(input string) error {
 			continue
 		}
 		if startOfSentence {
-			if strings.Contains(".,!?", word) {
+			if strings.ContainsAny(word,",.!?") {
 				continue
 			}
 
@@ -154,7 +152,7 @@ func (md *MarkovData) weightedPick(wordNo uint) uint {
 		tally += int(v)
 	}
 
-	choice := rand.Intn(tally + 1)
+	choice := rand.IntN(tally + 1)
 	offset := 0
 	for k, v := range md.WordGraph[wordNo] {
 		offset += int(v)
@@ -186,7 +184,7 @@ func (md *MarkovData) GenerateSentence(limit int) (string, error) {
 	if md.WordCount == 0 {
 		return "", errors.New("no data in markov database")
 	}
-	currWord := md.StartWords[rand.Intn(len(md.StartWords))]
+	currWord := md.StartWords[rand.IntN(len(md.StartWords))]
 	output := md.WordVals[currWord]
 	x := 0
 	for x < limit {
@@ -232,8 +230,3 @@ func (md *MarkovData) SaveToFile(filename string) error {
 	return nil
 }
 
-// Seed seeds the RNG for the markov num gen
-func (md *MarkovData) Seed() {
-	// Seed random time
-	rand.Seed(time.Now().UnixNano())
-}

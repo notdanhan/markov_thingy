@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"sync"
@@ -178,7 +178,7 @@ func (yt *YoutubeApiHandler) GetRandomVid(query string) (string, error) {
 		yt.Logger.Println("No Results!")
 		return "No Results!", errors.New("No Results")
 	}
-	myVid := result.Items[rand.Intn(len(result.Items))]
+	myVid := result.Items[rand.IntN(len(result.Items))]
 	return "https://youtube.com/watch?v=" + myVid.Id.VideoId, nil
 }
 

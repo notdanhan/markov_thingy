@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"os/signal"
 	"regexp"
@@ -241,7 +241,7 @@ func main() {
 						s.ChannelMessageSendReply(m.ChannelID, msg, m.Reference())
 					}
 				}
-			} else if rand.Intn(100) < int(progFlags.PostingOdds) {
+			} else if rand.IntN(100) < int(progFlags.PostingOdds) {
 				msg, err := serv.MarkovChain.GenerateSentence(50)
 				if err != nil {
 					logger.Println("Non-fatal ERROR:", err.Error())
