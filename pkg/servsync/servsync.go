@@ -43,8 +43,8 @@ func (u ServSync) MarshalJSON() ([]byte, error) {
 		return []byte{}, errors.New("Failed to save file.")
 	}
 	return json.Marshal(&struct {
-		ChanId   string `json:ChanId`
-		FileName string `json:FileName`
+		ChanId   string `json:"ChanId"`
+		FileName string `json:"FileName"`
 	}{
 		ChanId:   u.ChanId,
 		FileName: u.FileName,
@@ -53,8 +53,8 @@ func (u ServSync) MarshalJSON() ([]byte, error) {
 
 func (u *ServSync) UnmarshalJSON(data []byte) error {
 	aux := &struct {
-		ChanId   string `json:ChanId`
-		FileName string `json:FileName`
+		ChanId   string `json:"ChanId"`
+		FileName string `json:"FileName"`
 	}{}
 
 	if err := json.Unmarshal(data, &aux); err != nil {
