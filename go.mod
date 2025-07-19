@@ -3,7 +3,7 @@ module github.com/danielh2942/markov_thingy
 go 1.22
 
 require (
-	github.com/bwmarrin/discordgo v0.28.1
+	github.com/bwmarrin/discordgo v0.29.0
 	github.com/google/uuid v1.6.0
 )
 
